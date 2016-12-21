@@ -86,7 +86,7 @@ module Mailboxer
 
       #Basic reply method. USE NOT RECOMENDED.
       #Use reply_to_sender, reply_to_all and reply_to_conversation instead.
-      def reply(conversation, recipients, reply_body, subject=nil, sanitize_text=true, attachment=nil)
+      def reply(conversation, recipients, reply_body, subject=nil, sanitize_text=true, attachment=nil, obj=nil)
         subject = subject || "#{conversation.subject}"
         response = Mailboxer::MessageBuilder.new({
           :sender       => self,
@@ -94,7 +94,8 @@ module Mailboxer
           :recipients   => recipients,
           :body         => reply_body,
           :subject      => subject,
-          :attachment   => attachment
+          :attachment   => attachment,
+          :notified_object => obj
         }).build
 
         response.recipients.delete(self)
@@ -102,25 +103,25 @@ module Mailboxer
       end
 
       #Replies to the sender of the message in the conversation
-      def reply_to_sender(receipt, reply_body, subject=nil, sanitize_text=true, attachment=nil)
+      def reply_to_sender(receipt, reply_body, subject=nil, sanitize_text=true, attachment=nil, obj=nil)
         reply(receipt.conversation, receipt.message.sender, reply_body, subject, sanitize_text, attachment)
       end
 
       #Replies to all the recipients of the message in the conversation
-      def reply_to_all(receipt, reply_body, subject=nil, sanitize_text=true, attachment=nil)
+      def reply_to_all(receipt, reply_body, subject=nil, sanitize_text=true, attachment=nil, obj=nil)
         reply(receipt.conversation, receipt.message.recipients, reply_body, subject, sanitize_text, attachment)
       end
 
       #Replies to all the recipients of the last message in the conversation and untrash any trashed message by messageable
       #if should_untrash is set to true (this is so by default)
-      def reply_to_conversation(conversation, reply_body, subject=nil, should_untrash=true, sanitize_text=true, attachment=nil)
+      def reply_to_conversation(conversation, reply_body, subject=nil, should_untrash=true, sanitize_text=true, attachment=nil, obj=nil)
         #move conversation to inbox if it is currently in the trash and should_untrash parameter is true.
         if should_untrash && mailbox.is_trashed?(conversation)
           mailbox.receipts_for(conversation).untrash
           mailbox.receipts_for(conversation).mark_as_not_deleted
         end
 
-        reply(conversation, conversation.last_message.recipients, reply_body, subject, sanitize_text, attachment)
+        reply(conversation, conversation.last_message.recipients, reply_body, subject, sanitize_text, attachment, obj)
       end
 
       #Mark the object as read for messageable.
